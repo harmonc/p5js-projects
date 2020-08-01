@@ -10,7 +10,7 @@ var count = 0;
 
 function setup() {
   createCanvas(2000, 2000);
-  background(255);
+  background(52);
   ang = PI / 6;
   //palette.push(color('#000000'));
   palette.push(color('#1D2B53'));
@@ -32,7 +32,7 @@ function setup() {
   //palette.push(color('#FF77A8'));
   //palette.push(color('#FFCCAA'));
 
-  palette.push(color(255));
+  palette.push(color(225));
   c = palette[0];
 }
 
@@ -73,8 +73,8 @@ function step() {
   noStroke();
   fill(c);
   for (var i = 0; i < 3; i++) {
-    if(i==2 && !right){
-    fill(0,50);
+    if (i == 2 && !right) {
+      fill(0, 50);
     }
     beginShape();
     vertex(x, y);
@@ -86,11 +86,12 @@ function step() {
 
   if (y > window.height + w * 2) {
     count = count + 1;
+    if (count == 200) {
+      save("test2.png");
+    }
     x = 0;
     y = -1000;
     c = random(palette);
   }
-  if(count == 50){
-    save("test2.png");
-  }
+
 }
