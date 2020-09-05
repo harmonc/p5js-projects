@@ -1,6 +1,6 @@
 var board = [];
-var GRID_SIZE = 12;
-var SQUARE_SIZE = 50;
+var GRID_SIZE = 20;
+var SQUARE_SIZE = 30;
 var active_cells = [];
 var done = false;
 class Cell {
@@ -8,7 +8,15 @@ class Cell {
     this.row = row;
     this.col = col;
     this.dead = false;
- }
+  }
+}
+
+class Segment {
+  constructor(x1, y1, x2, y2) {
+    this.p1 = createVector(x1, y1);
+    this.p2 = createVector(x2, y2);
+    this.vertical = x1 == x2;
+  }
 }
 
 function setup() {
@@ -30,34 +38,110 @@ function setup() {
 }
 
 function draw() {
+  var done;
   for (var i2 = 0; i2 < 1; i2++) {
-    var done = grow();
-    if (done) {
-      print("done");
-      var s = SQUARE_SIZE;
-      stroke(0);
-      for (var i = 0; i < GRID_SIZE; i++) {
-        for (var j = 0; j < GRID_SIZE; j++) {
-          if (board[i][j]) {
-            if (!getBoard(i - 1, j)) {
-              line(j * s, i * s, j * s + s, i * s);
-            }
-            if (!getBoard(i + 1, j)) {
-              line(j * s, i * s + s, j * s + s, i * s + s);
-            }
-            if (!getBoard(i, j - 1)) {
-              line(j * s, i * s, j * s, i * s + s);
-            }
-            if (!getBoard(i, j + 1)) {
-              line(j * s + s, i * s, j * s + s, i * s + s);
-            }
+    done = grow();
+  }
+  if (done) {
+    print("done");
+    var s = SQUARE_SIZE;
+    stroke(0);
+    var segs = [];
+    for (var i = 0; i < GRID_SIZE; i++) {
+      for (var j = 0; j < GRID_SIZE; j++) {
+        if (board[i][j]) {
+          if (!getBoard(i - 1, j)) {
+            segs.push(new Segment(j * s, i * s, j * s + s, i * s));
+          }
+          if (!getBoard(i + 1, j)) {
+            segs.push(new Segment(j * s, i * s + s, j * s + s, i * s + s));
+          }
+          if (!getBoard(i, j - 1)) {
+            segs.push(new Segment(j * s, i * s, j * s, i * s + s));
+          }
+          if (!getBoard(i, j + 1)) {
+            segs.push(new Segment(j * s + s, i * s, j * s + s, i * s + s));
           }
         }
       }
-      save("test.svg");
-      noLoop();
+    }
+    print(segs.length);
+    strokeWeight(2);
+    for (var i = 0; i < segs.length; i++) {
+      if (i % 3 == 0) {
+        stroke(255, 0, 0);
+      } else if (i % 3 == 1) {
+        stroke(0, 255, 0);
+      } else {
+        stroke(0, 0, 255);
+      }
+      var seg = segs[i];
+      line(seg.p1.x, seg.p1.y, seg.p2.x, seg.p2.y);
+    }
+    condenseSegments(segs);
+    translate(GRID_SIZE * SQUARE_SIZE, 0);
+    print(segs.length);
+    stroke(255, 0, 0);
+    strokeWeight(2);
+    for (var i = 0; i < segs.length; i++) {
+      if (i % 3 == 0) {
+        stroke(255, 0, 0);
+      } else if (i % 3 == 1) {
+        stroke(0, 255, 0);
+      } else {
+        stroke(0, 0, 255);
+      }
+      var seg = segs[i];
+      line(seg.p1.x, seg.p1.y, seg.p2.x, seg.p2.y);
+    }
+    //save("test.svg");
+    noLoop();
+  }
+}
+
+function condenseSegments(segs) {
+  for (var i = segs.length - 1; i >= 0; i--) {
+    var match = i;
+    for (var j = i - 1; j >= 0; j--) {
+      if (aligned(segs[i], segs[j])) {
+        match = j;
+      }
+    }
+    if (match != i) {
+      var newSeg = connect(segs[i], segs[match]);
+      segs.splice(i, 1);
+      segs.splice(match, 1);
+      segs.unshift(newSeg);
     }
   }
+}
+
+function connect(seg1, seg2) {
+  var newSeg;
+  if (pEquals(seg1.p1, seg2.p1)) {
+    newSeg = new Segment(seg1.p2.x, seg1.p2.y, seg2.p2.x, seg2.p2.y);
+  } else if (pEquals(seg1.p1, seg2.p2)) {
+    newSeg = new Segment(seg1.p2.x, seg1.p2.y, seg2.p1.x, seg2.p1.y);
+  } else if (pEquals(seg1.p2, seg2.p1)) {
+    newSeg = new Segment(seg1.p1.x, seg1.p1.y, seg2.p2.x, seg2.p2.y);
+  } else {
+    newSeg = new Segment(seg1.p1.x, seg1.p1.y, seg2.p1.x, seg2.p1.y);
+  }
+  return newSeg;
+}
+
+function aligned(seg1, seg2) {
+  var result = false;
+  if (seg1.vertical == seg2.vertical) {
+    if (pEquals(seg1.p1, seg2.p1) || pEquals(seg1.p1, seg2.p2) || pEquals(seg1.p2, seg2.p1) || pEquals(seg1.p2, seg2.p2)) {
+      result = true;
+    }
+  }
+  return result;
+}
+
+function pEquals(p1, p2) {
+  return p1.x == p2.x && p1.y == p2.y;
 }
 
 function getBoard(row, col) {
@@ -70,9 +154,6 @@ function getBoard(row, col) {
   return result;
 }
 
-function mousePressed() {
-  save("test.png");
-}
 
 function drawBoard() {
   for (var i = 0; i < GRID_SIZE; i++) {
@@ -154,7 +235,7 @@ function updateCellStatus() {
       to_remove.push(i)
     }
     if (!cell.dead) {
-      if (active > 1 && random(1) < .99) {
+      if (active > 1 && random(1) < .01) {
         cell.dead = true;
         active = activeCount();
       }
